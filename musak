@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# musak : will download a file from youtube convert it to mp3 then add it directly into your itunes library.
+#
+
+command -v youtube-dl >/dev/null 2>&1 || { echo "I require youtube-dl but it's not installed.\n\nbrew install youtube-dl" >&2; exit 1; }
+command -v ffmpeg >/dev/null 2>&1 || { echo "I require ffmpeg but it's not installed.\n\nbrew install ffmpeg" >&2; exit 1; }
+
+echo "Downloading $1 ..."
+MP3_FILE=$(youtube-dl $1 --audio-format mp3 -x | awk '/\[ffmpeg\] Destination/ { for (i=3; i<=NF; i++) printf $i " "; }')
+if [[ "error" == *$MP3_FILE* ]]; then
+	echo "A black cat walks past..."
+	exit 
+fi
+MP3_FILE=${MP3_FILE%?}
+
+echo "Adding $MP3_FILE to iTunes..."
+TFILE="/tmp/musak_$RANDOM.tmp"
+
+echo $TFILE
+cat > $TFILE <<EOL
+set musak to posix file "${MP3_FILE}" as alias
+tell application "iTunes" to add musak
+EOL
+
+osascript $TFILE
